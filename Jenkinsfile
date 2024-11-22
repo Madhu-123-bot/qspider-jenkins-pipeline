@@ -28,7 +28,7 @@ pipeline {
                 script {
                     sh """
                     # Navigate to the Jenkins workspace where the repo was cloned
-                    cd qspider-jenkins-pipeline
+                    cd qspider-pipeline
                     # Copy all the files to the /var/www/html/ directory
                     sudo cp -r * /var/www/html/
                     """
