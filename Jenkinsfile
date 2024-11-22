@@ -2,51 +2,31 @@ pipeline {
     agent any
 
     environment {
-        // Path to the private key for Git
-        SSH_KEY = '/var/lib/jenkins/.ssh/privatekey.pem'
+        EC2_IP = '3.21.100.35'
+        USER = 'ubuntu'
+        KEY_PATH = '/var/lib/jenkins/.ssh/privatekey.pem' // Updated path on Jenkins EC2
     }
 
     stages {
         stage('Clone Repository') {
             steps {
-                script {
-                    // Add SSH private key for Git operations
-                    sshagent(credentials: []) {
-                        sh """
-                        eval \$(ssh-agent)
-                        chmod 600 ${SSH_KEY}
-                        ssh-add ${SSH_KEY}
-                        git clone https://github.com/Madhu-123-bot/qspider-jenkins-pipeline.git
-                        """
-                    }
-                }
+                git branch: 'main', url: 'https://github.com/Madhu-123-bot/qspider-jenkins-pipeline.git'
             }
         }
-
-        stage('Copy Files') {
+	
+        stage('Deploy to NGINX Server') {
             steps {
-                script {
-                    sh """
-                    # Navigate to the Jenkins workspace where the repo was cloned
-                    cd qspider-pipeline
-                    # Copy all the files to the /var/www/html/ directory
-                    sudo cp -r * /var/www/html/
-                    """
-                }
+                sh """
+                ssh -i $KEY_PATH -o StrictHostKeyChecking=no ${USER}@${EC2_IP} 'rm -rf /var/www/html/*'
+                scp -i $KEY_PATH -o StrictHostKeyChecking=no -r * ${USER}@${EC2_IP}:/var/www/html/
+                """
             }
         }
     }
 
     post {
         always {
-            // Cleanup SSH agent after the pipeline execution
-            sh "killall ssh-agent || true"
-        }
-        success {
-            echo 'Pipeline executed successfully!'
-        }
-        failure {
-            echo 'Pipeline failed!'
+            echo 'Deployment completed!'
         }
     }
 }
